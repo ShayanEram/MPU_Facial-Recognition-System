@@ -1,0 +1,12 @@
+cmake_minimum_required(VERSION 2.8.12)
+project(clientTCP CXX C)
+include_directories(../commun)
+add_executable(clientTCP src/imageClient.cpp)
+
+find_package(OpenCV REQUIRED)
+if(OpenCV_FOUND)
+	include_directories(${OpenCV_INCLUDE_DIRS})
+	target_link_libraries(clientTCP ${OpenCV_LIBRARIES})
+else(OpenCV_FOUND)
+	message(FATAL ERROR "Librarie OpenCV introuvable!")
+endif(OpenCV_FOUND)

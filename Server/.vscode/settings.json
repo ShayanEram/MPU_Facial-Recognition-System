@@ -1,0 +1,11 @@
+{
+    "ODROIDC2": 
+    {
+    /* Target Device Settings */
+    "TARGET_IP":"192.168.7.2",
+    /* Target Port Settings */
+    "TARGET_PORT":"2000",
+    /* Project Settings */
+    "PROGRAM":"serverTCP"
+    }   
+}

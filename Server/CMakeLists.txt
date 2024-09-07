@@ -1,0 +1,13 @@
+cmake_minimum_required(VERSION 2.8.12)
+add_definitions(-std=c++11)
+project(serverTCP CXX C)
+include_directories(../commun)
+add_executable(serverTCP src/imageServer.cpp)
+
+find_package(OpenCV REQUIRED)
+if(OpenCV_FOUND)
+	include_directories(${OpenCV_INCLUDE_DIRS})
+	target_link_libraries(serverTCP ${OpenCV_LIBRARIES})
+else(OpenCV_FOUND)
+	message(FATAL ERROR "Librarie OpenCV introuvable!")
+endif(OpenCV_FOUND)
