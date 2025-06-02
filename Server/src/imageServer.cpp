@@ -6,22 +6,10 @@
  * This code is a TCP server that accepts image data from clients and sends compressed images over the network.
  */
 // Include all defines and common values and functions
-#include <iostream>
-#include <netinet/in.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/socket.h>
-#include <unistd.h>
-#include <fstream>
-#include <string>
-#include <opencv2/opencv.hpp>
-#include <time.h>
-#include <vector>
-#include "serverFuncs.h"
-
-using namespace std;
-using namespace cv;
+#include "serverFuncs.hpp"
+#include "Connector.hpp"
+#include "InputOutput.hpp"
+#include "videoManager.hpp"
 
 /**
  * @brief Main function for the server.
@@ -30,29 +18,33 @@ using namespace cv;
  */
 int main(int argc, char const* argv[])
 {
+    Connector& connect = Connector::getInstance();
+    InputOutput& io = InputOutput::getInstance();
+    VideoManager& video = VideoManager::getInstance();
+    
     // Initialize variables
-    uint32_t messages = 0x00000000;
+    uint32_t messages {0x00000000};
     int server_fd, new_socket;
     ssize_t valread;
     struct sockaddr_in address;
-    int opt = 1;
+    int opt {1};
     socklen_t addrlen = sizeof(address);
-    int imageSize = 3326;
-    bool connect_OK = true;
-    int index = 0;
-    bool light = false;
-    bool btn = false;
-    int testRes =0;
-    bool btnUsed = false;
+    int imageSize {3326};
+    bool connect_OK {true};
+    int index {0};
+    bool light {false};
+    bool btn {false};
+    int testRes {0};
+    bool btnUsed {false};
 
     // Connect to client
-    serverConnect(server_fd, address, opt);
+    connect.serverConnect(server_fd, address, opt);
     cout << "Socket Bound to port: " << PORT << endl;
     
     while(true)
     {
         // Accept client
-        serverAccept(server_fd, new_socket, address, addrlen, connect_OK);
+        connect.serverAccept(server_fd, new_socket, address, addrlen, connect_OK);
 
         // Prepare the image Capture
         VideoCapture capture(0);
@@ -62,13 +54,13 @@ int main(int argc, char const* argv[])
         while(connect_OK)
         {
             // Light and btn check
-            light = readADC();
-            btn = readGPIO();
+            light = io.readADC();
+            btn = io.readGPIO();
             cout << "Light is: " << light << endl;
             cout << "btn is: " << btn << endl;
             
             // Send messages to client
-            sendMessage(messages, new_socket, light, btn, btnUsed, capture);
+            connect.sendMessage(messages, new_socket, light, btn, btnUsed, capture);
             
             // Run serverExec file
             if(light == true && btn == true && btnUsed == false)
@@ -94,7 +86,7 @@ int main(int argc, char const* argv[])
             }
 
             // Read messages from client
-            readClient(messages, new_socket, connect_OK, index, testRes, valread, capture);
+            connect.readClient(messages, new_socket, connect_OK, index, testRes, valread, capture);
         }
         // Close connection
         close(new_socket);

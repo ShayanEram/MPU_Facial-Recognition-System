@@ -1,137 +1,25 @@
 /**
- * @file clientFuncs.h
- * @brief src file for client functions used in the client-side program.
+ * @file FaceProcessor.cpp
+ * @brief Source file for face processing functions.
  * @author Shayan Eram
  */
-#include <iostream>
-#include <arpa/inet.h>
-#include <stdio.h>
-#include <string.h>
-#include <sys/socket.h>
-#include <unistd.h>
-#include <opencv2/opencv.hpp>
-#include <time.h>
-#include <string>
-#include <sstream>
-#include <fstream>
-#include <sys/stat.h>
-#include <dirent.h>
 
-// Include all defines and commun values
-#include "clientFuncs.h"
-#include "../commun/imageCommun.h"
+#include "FaceProcessor.hpp"
 
-using namespace std;
-using namespace cv;
-
-
-namespace patch
-{
-    template <typename T> std::string to_string(const T& n)
-    {
-        std:: ostringstream stm;
-        stm << n;
-        return stm.str();
-    }
+FaceProcessor& FaceProcessor::getInstance() {
+    static FaceProcessor instance;
+    return instance;
 }
 
-
-Mat recivImage(int& valread, int& client_fd, int& vectorSize)
+template <typename T> 
+static std::string to_string(const T& n)
 {
-    valread = read(client_fd, &vectorSize, sizeof(vectorSize));
-
-    vector<uchar> imageCode(vectorSize);
-    size_t bytesRead = 0;
-    
-    while (bytesRead < vectorSize) {
-        ssize_t result = read(client_fd, imageCode.data() + bytesRead, imageCode.size() - bytesRead);
-        
-        if (result < 0) {
-            cout << "Result error" << endl;
-            break;
-        } 
-        else {
-            bytesRead += result;
-        }
-    }
-    
-    Mat image = imdecode(Mat(imageCode), IMREAD_UNCHANGED);
-    
-    if (image.empty()) {
-        cout << "Failed to decode the image." << endl;
-
-    }
-
-    return image;
+    std:: ostringstream stm;
+    stm << n;
+    return stm.str();
 }
 
-
-int clientConnect(int& client_fd,struct sockaddr_in& serverAddr, int& status)
-{
-    // Create a socket
-    if ((client_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-        perror("socket failed");
-        return -1;
-    }
-
-    serverAddr.sin_family = AF_INET;
-    serverAddr.sin_port = htons(PORT);
-
-    // Convert IPv4 and IPv6 addresses from text to binary form
-    if (inet_pton(AF_INET, "192.168.7.2", &serverAddr.sin_addr) <= 0) {
-        perror("Invalid address/ Address not supported");
-        return -1;
-    }
-
-    // Connect to the server
-    if ((status = connect(client_fd, (struct sockaddr*)&serverAddr, sizeof(serverAddr))) < 0) {
-        perror("connection failed");
-        return -1;
-    }
-}
-
-
-void keyPress(int& waitK, uint32_t& messages, int& client_fd)
-{
-    
-    cout << "....................." << endl;
-    cout << "Press ESC for quit"<<endl;
-    cout << "Press 1 for res1"<<endl;
-    cout << "Press 2 for res2"<<endl;
-    cout << "Press 5 for Mode apprentissage"<<endl;
-    cout << "Press 6 for Mode reconnaissance" << endl;
-    cout << "....................." << endl;
-    
-    if (waitK == ESC) {
-        // Set messages to Quit and send to server
-        messages = QUIT;    // Force messages to 0x0
-        
-        send(client_fd, &messages, sizeof(messages), 0);
-        close(client_fd);
-        cout << "Closing connection" << endl;
-
-    } 
-    else if(waitK == K1){
-        // set messages to res1 and ok
-        messages = RESO1;
-        messages |= OK;
-    }
-    else if(waitK == K2){
-        // set messages to res2 and ok
-        messages = RESO2;
-        messages |= OK;
-    }
-    else {
-        // set messages to OK
-        messages = OK;
-    }
-    // Send to server
-    send(client_fd, &messages, sizeof(messages), 0);
-
-}
-
-
-void cropFace(Mat& image,int& imageID)
+void FaceProcessor::cropFace(Mat& image,int& imageID)
 {
     CascadeClassifier face_cascade;
     face_cascade.load("haarcascade_frontalface_default.xml");
@@ -157,8 +45,7 @@ void cropFace(Mat& image,int& imageID)
     imwrite(saveFolder + "Image"+patch::to_string(imageID)+".png", croppedFace);
 }
 
-
-void detectFace(Mat& image,int& imageID)
+void FaceProcessor::detectFace(Mat& image,int& imageID)
 {
     // Face detection
     CascadeClassifier face_cascade;
@@ -180,8 +67,7 @@ void detectFace(Mat& image,int& imageID)
     imwrite("Image"+patch::to_string(imageID)+".png", image);
 }
 
-
-static Mat norm_0_255(InputArray _src) {
+Mat FaceProcessor::norm_0_255(InputArray _src) {
     Mat src = _src.getMat();
     // Create and return normalized image:
     Mat dst;
@@ -199,8 +85,7 @@ static Mat norm_0_255(InputArray _src) {
     return dst;
 }
 
-
-static void read_csv(const string& filename, vector<Mat>& images, vector<int>& labels, char separator = ';') {
+void FaceProcessor::read_csv(const string& filename, vector<Mat>& images, vector<int>& labels, char separator = ';') {
     
     cout << "readCSV is doing!" <<endl;
 
@@ -220,8 +105,7 @@ static void read_csv(const string& filename, vector<Mat>& images, vector<int>& l
     }
 }
 
-
-void trainAndPredict(const string& fn_csv)
+void FaceProcessor::trainAndPredict(const string& fn_csv)
 {
     cout << "train_predict is doing!" <<endl;
     // These vectors hold the images and corresponding labels.
@@ -260,8 +144,7 @@ void trainAndPredict(const string& fn_csv)
     cout << "Predict is cofidence lvl:" << confidence <<endl;
 }
 
-
-void createCsv(const string& base_path, const string& separator = ";") {
+void FaceProcessor::createCsv(const string& base_path, const string& separator = ";") {
     
     cout << "createCSV is doing!" <<endl;
     DIR* dir = opendir(base_path.c_str());
@@ -312,8 +195,7 @@ void createCsv(const string& base_path, const string& separator = ";") {
     csvFile.close();
 }
 
-
-void resizePhotos(const string& pathFace)
+void FaceProcessor::resizePhotos(const string& pathFace)
 {
     cout << "resizePhotos is doing!" <<endl;
     DIR* subdir = opendir(pathFace.c_str());
